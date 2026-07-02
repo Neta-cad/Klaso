@@ -131,6 +131,11 @@
       alert('Only school owner accounts can post jobs.');
       window.location.href = '../index.html';
     }
+    if (!profile.avatar_url) {
+      alert('Please add a profile photo before posting a job. This helps build trust with applicants.');
+      window.location.href = 'profile.html';
+      return;
+    }
   })();
 
   document.getElementById('jobForm').addEventListener('submit', async function(e) {

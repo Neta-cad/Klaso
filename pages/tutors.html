@@ -124,7 +124,7 @@
         <div class="job-card-top">
           <div>
             <div class="job-school">${t.location} · ${t.mode} · ★ ${t.rating || 'New'}</div>
-            <h3>${t.name}</h3>
+            <h3><a href="view-profile.html?id=${t.tutor_id}" style="color:inherit;">${t.name}</a></h3>
           </div>
           ${t.verified ? '<span class="stamp stamp-verified">Verified</span>' : ''}
           ${t.featured && !t.verified ? '<span class="stamp stamp-pro">Featured</span>' : ''}
@@ -135,7 +135,7 @@
         <p style="color:var(--slate); font-size:0.88rem; margin-bottom:16px;">${t.bio}</p>
         <div class="job-foot">
           <span class="job-pay">${t.rate}</span>
-          <a href="register.html" class="btn btn-sm btn-ghost">Book session</a>
+          <button class="btn btn-sm btn-ghost" onclick="bookTutor('${t.id}', '${t.name.replace(/'/g, "\\'")}')">Book session</button>
         </div>
       </div>
     `).join('');
@@ -144,7 +144,49 @@
   document.getElementById('searchInput').addEventListener('input', renderTutors);
   document.getElementById('locationFilter').addEventListener('change', renderTutors);
   document.getElementById('modeFilter').addEventListener('change', renderTutors);
+async function bookTutor(tutorId, tutorName) {
+  const { data: { session } } = await supabaseClient.auth.getSession();
 
+  if (!session) {
+    alert('Please log in to book a tutor.');
+    window.location.href = 'login.html';
+    return;
+  }
+
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('role, avatar_url')
+    .eq('id', session.user.id)
+    .single();
+
+  if (profile && profile.role === 'tutor') {
+    alert('Tutor accounts cannot book other tutors.');
+    return;
+  }
+  if (!profile.avatar_url) {
+    alert('Please add a profile photo before booking. This helps tutors trust your request.');
+    window.location.href = 'profile.html';
+    return;
+  }
+
+  const message = prompt(`Booking a session with ${tutorName}. Add a short message (e.g. preferred day/time):`);
+  if (message === null) return;
+
+  const { error } = await supabaseClient
+    .from('bookings')
+    .insert({
+      tutor_id: tutorId,
+      student_id: session.user.id,
+      message: message || null
+    });
+
+  if (error) {
+    alert('Error booking: ' + error.message);
+    return;
+  }
+
+  alert('✓ Booking request sent! The tutor will confirm shortly.');
+}
   renderTutors();
 </script>
 </body>

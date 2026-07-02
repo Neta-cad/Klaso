@@ -137,7 +137,7 @@
         <p style="color:var(--slate); font-size:0.88rem; margin-bottom:16px;">${j.description}</p>
         <div class="job-foot">
           <span class="job-pay">${j.pay}</span>
-          <a href="register.html" class="btn btn-sm btn-ghost">Apply</a>
+         <button class="btn btn-sm btn-ghost" onclick="applyToJob('${j.id}', '${j.title.replace(/'/g, "\\'")}')">Apply</button>
         </div>
       </div>
     `).join('');
@@ -146,6 +146,53 @@
   document.getElementById('searchInput').addEventListener('input', renderJobs);
   document.getElementById('locationFilter').addEventListener('change', renderJobs);
   document.getElementById('typeFilter').addEventListener('change', renderJobs);
+  async function applyToJob(jobId, jobTitle) {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if (!session) {
+    alert('Please log in to apply for jobs.');
+    window.location.href = 'login.html';
+    return;
+  }
+
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('role, avatar_url')
+    .eq('id', session.user.id)
+    .single();
+
+  if (profile && profile.role === 'school') {
+    alert('School owner accounts cannot apply to jobs.');
+    return;
+  }
+  if (!profile.avatar_url) {
+    alert('Please add a profile photo before applying. This helps schools trust your application.');
+    window.location.href = 'profile.html';
+    return;
+  }
+
+  const message = prompt(`Applying for "${jobTitle}". Add a short message to the school (optional):`);
+  if (message === null) return; // user cancelled
+
+  const { error } = await supabaseClient
+    .from('applications')
+    .insert({
+      job_id: jobId,
+      applicant_id: session.user.id,
+      message: message || null
+    });
+
+  if (error) {
+    if (error.code === '23505') {
+      alert('You already applied to this job.');
+    } else {
+      alert('Error applying: ' + error.message);
+    }
+    return;
+  }
+
+  alert('✓ Application submitted! The school will review it soon.');
+}
 
   renderJobs();
 </script>
