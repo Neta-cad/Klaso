@@ -98,6 +98,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/supabase-client.js"></script>
+<script src="../js/auth-nav.js"></script>
 <script>
   // Pre-select role from URL, e.g. register.html?role=school
   const params = new URLSearchParams(window.location.search);
@@ -149,6 +150,11 @@
 
     document.getElementById('registerForm').style.display = 'none';
     document.getElementById('successMsg').style.display = 'block';
+    document.getElementById('successMsg').textContent = '✓ Account created! Redirecting...';
+
+    setTimeout(() => {
+      window.location.href = '../index.html';
+    }, 1200);
   });
 </script>
 </body>
