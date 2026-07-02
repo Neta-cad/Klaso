@@ -110,7 +110,6 @@
 <script src="../data/jobs.js"></script>
 <script src="../js/auth-nav.js"></script>
 <script>
-  <script>
   // Block access if not logged in as a school owner
   (async function checkAccess() {
     const { data: { session } } = await supabaseClient.auth.getSession();
@@ -123,7 +122,7 @@
 
     const { data: profile } = await supabaseClient
       .from('profiles')
-      .select('role')
+      .select('role, avatar_url')
       .eq('id', session.user.id)
       .single();
 
