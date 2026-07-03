@@ -21,19 +21,7 @@ async function updateNav() {
     const prefix = window.location.pathname.includes('/pages/') ? '' : 'pages/';
     const unreadCount = typeof getUnreadCount === 'function' ? await getUnreadCount() : 0;
 
-    let dashboardLink = '';
-    if (profile && profile.role === 'school') {
-      dashboardLink = `<a href="${prefix}my-applicants.html" class="btn btn-ghost btn-sm">My Jobs</a>`;
-    } else if (profile && profile.role === 'tutor') {
-      dashboardLink = `<a href="${prefix}my-bookings.html" class="btn btn-ghost btn-sm">My Bookings</a>`;
-    } else if (profile && profile.role === 'teacher') {
-      dashboardLink = `<a href="${prefix}my-applications.html" class="btn btn-ghost btn-sm">My Applications</a>`;
-    } else if (profile && profile.role === 'student') {
-      dashboardLink = `<a href="${prefix}my-learning.html" class="btn btn-ghost btn-sm">My Learning</a>`;
-    }
-
     navActions.innerHTML = `
-      ${dashboardLink}
       <a href="${prefix}notifications.html" class="btn btn-ghost btn-sm" style="position:relative;">
         🔔${unreadCount > 0 ? `<span style="position:absolute; top:-4px; right:-4px; background:var(--coral); color:white; font-size:0.62rem; font-weight:700; border-radius:999px; width:16px; height:16px; display:flex; align-items:center; justify-content:center;">${unreadCount > 9 ? '9+' : unreadCount}</span>` : ''}
       </a>
