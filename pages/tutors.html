@@ -91,8 +91,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/supabase-client.js"></script>
+<script src="../js/messaging.js"></script>
 <script src="../js/main.js"></script>
 <script src="../data/tutors.js"></script>
+<script src="../js/notifications.js"></script>
 <script src="../js/auth-nav.js"></script>
 <script>
   async function renderTutors() {
@@ -136,6 +138,7 @@
         <div class="job-foot">
           <span class="job-pay">${t.rate}</span>
           <button class="btn btn-sm btn-ghost" onclick="bookTutor('${t.id}', '${t.name.replace(/'/g, "\\'")}')">Book session</button>
+          <button class="btn btn-sm btn-ghost" onclick="messageTutor('${t.tutor_id}')">💬 Message</button>
         </div>
       </div>
     `).join('');
@@ -185,7 +188,32 @@ async function bookTutor(tutorId, tutorName) {
     return;
   }
 
+  await createNotification(tutorId, 'booking', 'You have a new booking request', 'my-bookings.html');
+
   alert('✓ Booking request sent! The tutor will confirm shortly.');
+}
+async function messageTutor(tutorId) {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if (!session) {
+    alert('Please log in to message this tutor.');
+    window.location.href = 'login.html';
+    return;
+  }
+
+  if (session.user.id === tutorId) {
+    alert('You cannot message yourself.');
+    return;
+  }
+
+  const result = await getOrCreateConversation(tutorId);
+
+  if (!result.success) {
+    alert('Error starting conversation: ' + result.message);
+    return;
+  }
+
+  window.location.href = 'chat.html?id=' + result.conversation.id;
 }
   renderTutors();
 </script>

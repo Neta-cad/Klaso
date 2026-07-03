@@ -83,6 +83,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/supabase-client.js"></script>
+<script src="../js/notifications.js"></script>
 <script src="../js/auth-nav.js"></script>
 <script>
   let currentUserId = null;
@@ -150,17 +151,21 @@
             : apps.map(a => `
               <div class="applicant-row">
                 <div>
-                 <strong><a href="view-profile.html?id=${a.applicant_id}" style="color:inherit;">${a.profiles ? a.profiles.name : 'Applicant'}</a></strong>
+                  <strong><a href="view-profile.html?id=${a.applicant_id}" style="color:inherit;">${a.profiles ? a.profiles.name : 'Applicant'}</a></strong>
                   ${a.message ? `<p style="font-size:0.85rem; color:var(--slate); margin-top:4px;">"${a.message}"</p>` : ''}
+                  <button class="btn btn-sm btn-ghost" style="margin-top:6px;" onclick="messageApplicant('${a.applicant_id}')">💬 Message</button>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
                   <span class="status-badge status-${a.status}">${a.status}</span>
                   ${a.status === 'pending' ? `
-                    <button class="btn btn-sm btn-accent" onclick="updateStatus('${a.id}', 'shortlisted')">Shortlist</button>
-                    <button class="btn btn-sm btn-ghost" onclick="updateStatus('${a.id}', 'rejected')">Reject</button>
+                    <button class="btn btn-sm btn-accent" onclick="updateStatus('${a.id}', 'shortlisted', '${a.applicant_id}')">Shortlist</button>
+                    <button class="btn btn-sm btn-ghost" onclick="updateStatus('${a.id}', 'rejected', '${a.applicant_id}')">Reject</button>
                   ` : ''}
                   ${a.status === 'shortlisted' ? `
-                    <button class="btn btn-sm btn-primary" onclick="updateStatus('${a.id}', 'hired')">Mark hired</button>
+                    <button class="btn btn-sm btn-primary" onclick="updateStatus('${a.id}', 'hired', '${a.applicant_id}')">Mark hired</button>
+                  ` : ''}
+                  ${a.status === 'hired' ? `
+                    <button class="btn btn-sm btn-ghost" onclick="leaveReview('${a.applicant_id}', 'job_${job.id}')">⭐ Review</button>
                   ` : ''}
                 </div>
               </div>
@@ -173,12 +178,50 @@
     list.innerHTML = html;
   }
 
-  async function updateStatus(applicationId, newStatus) {
+  async function updateStatus(applicationId, newStatus, applicantId) {
     await supabaseClient
       .from('applications')
       .update({ status: newStatus })
       .eq('id', applicationId);
+
+    const statusMessages = {
+      shortlisted: 'Your application was shortlisted! 🎉',
+      rejected: 'Your application was not selected this time.',
+      hired: 'Congratulations! You were hired! 🎉'
+    };
+    if (statusMessages[newStatus]) {
+      await createNotification(applicantId, 'application_update', statusMessages[newStatus], 'jobs.html');
+    }
+
     loadMyJobs();
+  }
+  async function messageApplicant(applicantId) {
+  const result = await getOrCreateConversation(applicantId);
+  if (!result.success) {
+    alert('Error: ' + result.message);
+    return;
+  }
+  window.location.href = 'chat.html?id=' + result.conversation.id;
+}
+async function leaveReview(revieweeId, context) {
+    const ratingStr = prompt('Rate this person from 1 to 5 stars:');
+    const rating = parseInt(ratingStr);
+
+    if (!rating || rating < 1 || rating > 5) {
+      alert('Please enter a number between 1 and 5.');
+      return;
+    }
+
+    const comment = prompt('Add a comment (optional):');
+
+    const result = await submitReview(revieweeId, rating, comment, context);
+
+    if (!result.success) {
+      alert('Error submitting review: ' + result.message);
+      return;
+    }
+
+    alert('✓ Review submitted!');
   }
 </script>
 </body>

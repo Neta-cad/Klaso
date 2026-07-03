@@ -91,8 +91,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/supabase-client.js"></script>
+<script src="../js/messaging.js"></script>
 <script src="../js/main.js"></script>
 <script src="../data/jobs.js"></script>
+<script src="../js/notifications.js"></script>
 <script src="../js/auth-nav.js"></script>
 <script>
   async function renderJobs() {
@@ -122,7 +124,7 @@
       <div class="job-card">
         <div class="job-card-top">
           <div>
-            <div class="job-school">${j.school} · ${j.location}</div>
+            <div class="job-school"><a href="school-profile.html?id=${j.school_id}" style="color:inherit;">${j.school_name}</a> · ${j.location}</div>
             <h3>${j.title}</h3>
           </div>
           ${j.verified ? '<span class="stamp stamp-verified">Verified</span>' : ''}
@@ -138,6 +140,7 @@
         <div class="job-foot">
           <span class="job-pay">${j.pay}</span>
          <button class="btn btn-sm btn-ghost" onclick="applyToJob('${j.id}', '${j.title.replace(/'/g, "\\'")}')">Apply</button>
+         <button class="btn btn-sm btn-ghost" onclick="messageSchool('${j.school_id}')">💬 Message</button>
         </div>
       </div>
     `).join('');
@@ -191,9 +194,36 @@
     return;
   }
 
+  const { data: jobData } = await supabaseClient.from('jobs').select('school_id').eq('id', jobId).single();
+  if (jobData) {
+    await createNotification(jobData.school_id, 'application', `New application for "${jobTitle}"`, 'my-applicants.html');
+  }
+
   alert('✓ Application submitted! The school will review it soon.');
 }
+async function messageSchool(schoolId) {
+  const { data: { session } } = await supabaseClient.auth.getSession();
 
+  if (!session) {
+    alert('Please log in to message this school.');
+    window.location.href = 'login.html';
+    return;
+  }
+
+  if (session.user.id === schoolId) {
+    alert('You cannot message yourself.');
+    return;
+  }
+
+  const result = await getOrCreateConversation(schoolId);
+
+  if (!result.success) {
+    alert('Error starting conversation: ' + result.message);
+    return;
+  }
+
+  window.location.href = 'chat.html?id=' + result.conversation.id;
+}
   renderJobs();
 </script>
 </body>
